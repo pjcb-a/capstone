@@ -10,7 +10,7 @@ The first round used only a short prompt asking Codex to create a contact form f
 
 ### Correctness
 
-Codex produced a surprisingly complete and functional form. It independently selected the form structure, added client-side validation, generated inline error handling, and performed project checks. The implementation exceeded the minimum requirement despite the vague prompt.
+Codex produced a surprisingly complete and functional form. It independently selected the form structure, added client-side validation, generated inline error handling, and performed project checks despite having an isolated environment not having any outside interference or context on what the feature should look. The implementation exceeded the minimum requirement despite the vague prompt.
 
 ### Accessibility
 
