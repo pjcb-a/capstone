@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import "./projects.css"
 
 type Category = "All" | "Frontend" | "Full Stack" | "UI/UX";
 
