@@ -1,156 +1,281 @@
-import { useMemo, useState } from 'react';
-import './projects.css';
+import { useMemo, useState } from "react";
 
-type ProjectCategory = 'All' | 'Frontend' | 'Full Stack' | 'UI/UX';
+
+type Category = "All" | "Frontend" | "Full Stack" | "UI/UX";
 
 type Project = {
+  number: string;
   title: string;
-  description: string;
-  category: Exclude<ProjectCategory, 'All'>[];
+  type: Exclude<Category, "All">;
   year: string;
-  tech: string[];
-  featured?: boolean;
-  image?: string;
-  link?: string;
+  status: string;
+  summary: string;
+  role: string;
+  stack: string[];
+  contribution: string;
 };
 
 const projects: Project[] = [
   {
-    title: 'Kasundo',
-    description:
-      'A mobile-first debt acknowledgement platform designed to make agreements, deadlines, notifications, and repayment confirmation easier to manage.',
-    category: ['Full Stack', 'UI/UX'],
-    year: '2026',
-    tech: ['React', 'TypeScript', 'FastAPI', 'PostgreSQL'],
-    featured: true,
+    number: "01",
+    title: "Kasundo",
+    type: "Full Stack",
+    year: "2026",
+    status: "In development",
+    summary:
+      "A mobile-first debt acknowledgement platform that turns informal lending agreements into clear, trackable commitments.",
+    role: "Backend Developer",
+    stack: ["FastAPI", "Python", "PostgreSQL", "Supabase", "JWT"],
+    contribution:
+      "Designed the API structure, authentication flow, service layer, agreement lifecycle, notifications, and repayment confirmation workflow.",
   },
   {
-    title: 'CARES',
-    description:
-      'A centralized student engagement system that routes concerns to the right office while keeping communication, appointments, and status tracking in one place.',
-    category: ['Frontend', 'UI/UX'],
-    year: '2026',
-    tech: ['TypeScript', 'Vue', 'UI/UX'],
-    featured: true,
+    number: "02",
+    title: "CARES",
+    type: "Frontend",
+    year: "2025",
+    status: "Completed",
+    summary:
+      "A centralized campus engagement system for routing concerns, requesting appointments, accessing information, and tracking updates.",
+    role: "UI/UX Designer · Frontend Developer",
+    stack: ["Vue", "TypeScript", "JavaScript", "Figma"],
+    contribution:
+      "Planned the frontend architecture and interaction patterns, then built responsive forms, status tracking, appointments, and notifications.",
   },
   {
-    title: 'SubTrack',
-    description:
-      'A subscription tracker focused on preventing missed renewals through deadlines, reminders, payment logs, and a priority-driven dashboard.',
-    category: ['Frontend', 'UI/UX'],
-    year: '2025',
-    tech: ['Vue', 'JavaScript', 'UI/UX'],
+    number: "03",
+    title: "SubTrack",
+    type: "Frontend",
+    year: "2025",
+    status: "Completed",
+    summary:
+      "A subscription tracker focused on upcoming payments, free-trial deadlines, recurring charges, and reminders.",
+    role: "UI/UX Designer · Frontend Developer",
+    stack: ["Vue", "JavaScript", "CSS", "Figma"],
+    contribution:
+      "Designed the deadline-first information hierarchy and implemented the dashboard, calendar, subscription, payment, and reminder flows.",
   },
   {
-    title: 'Petsy',
-    description:
-      'A pet sitter discovery concept for local fur-parents who need dependable pet care when they are busy or away.',
-    category: ['UI/UX', 'Frontend'],
-    year: '2026',
-    tech: ['Figma', 'Prototyping', 'Vue'],
+    number: "04",
+    title: "Sports Reporting Database",
+    type: "Full Stack",
+    year: "2025",
+    status: "Completed",
+    summary:
+      "A web system for organizing sports events, reports, records, and analytics around a structured relational dataset.",
+    role: "Frontend Developer",
+    stack: ["Vue", "Pinia", "Flask", "PostgreSQL"],
+    contribution:
+      "Built the frontend views and state management, connected UI flows to backend data, and worked with event and reporting relationships.",
   },
   {
-    title: 'Sports Reporting DB',
-    description:
-      'A sports reporting system that combines event management, structured records, and analytics into one web application.',
-    category: ['Full Stack', 'Frontend'],
-    year: '2025',
-    tech: ['Vue', 'Flask', 'PostgreSQL'],
+    number: "05",
+    title: "Petsy",
+    type: "UI/UX",
+    year: "2025",
+    status: "Prototype",
+    summary:
+      "A local pet-sitter discovery concept that makes nearby care options easier for busy pet owners to find and compare.",
+    role: "Product Designer",
+    stack: ["Figma", "UX Research", "Prototyping"],
+    contribution:
+      "Explored the discovery journey, refined the product structure, and iterated the interface from low-fidelity to medium-fidelity prototypes.",
+  },
+  {
+    number: "06",
+    title: "Personal Portfolio",
+    type: "Frontend",
+    year: "2026",
+    status: "Active",
+    summary:
+      "A developer portfolio designed to communicate frontend engineering, UI/UX work, and software projects through concise case studies.",
+    role: "Designer · Frontend Developer",
+    stack: ["React", "TypeScript", "Vite", "Anime.js", "CSS"],
+    contribution:
+      "Designed and implemented the portfolio system with reusable components, responsive layouts, and motion used to reinforce hierarchy.",
   },
 ];
 
-const filters: ProjectCategory[] = ['All', 'Frontend', 'Full Stack', 'UI/UX'];
+const filters: Category[] = ["All", "Frontend", "Full Stack", "UI/UX"];
 
-export default function Projects() {
-  const [activeFilter, setActiveFilter] = useState<ProjectCategory>('All');
+function ArrowUpRight() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path
+        d="M5 15 15 5M7 5h8v8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
-  const visibleProjects = useMemo(() => {
-    if (activeFilter === 'All') return projects;
-    return projects.filter((project) => project.category.includes(activeFilter));
-  }, [activeFilter]);
+function ProjectCard({ project }: { project: Project }) {
+  return (
+    <article className="project">
+      <div className="project__index" aria-hidden="true">
+        {project.number}
+      </div>
+
+      <div className="project__main">
+        <div className="project__heading">
+          <div>
+            <p className="project__eyebrow">
+              {project.type} <span>•</span> {project.year}
+            </p>
+            <h2>{project.title}</h2>
+          </div>
+
+          <span className="project__status">{project.status}</span>
+        </div>
+
+        <p className="project__summary">{project.summary}</p>
+
+        <div className="project__details">
+          <div>
+            <p className="detail-label">My role</p>
+            <p className="detail-value">{project.role}</p>
+          </div>
+
+          <div>
+            <p className="detail-label">Technologies</p>
+            <div className="chips">
+              {project.stack.map((item) => (
+                <span className="chip" key={item}>
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="project__contribution">
+            <p className="detail-label">What I worked on</p>
+            <p className="detail-value">{project.contribution}</p>
+          </div>
+        </div>
+      </div>
+
+      <a
+        className="project__action"
+        href={`#${project.title.toLowerCase().replaceAll(" ", "-")}`}
+        aria-label={`View ${project.title}`}
+      >
+        <span>View</span>
+        <ArrowUpRight />
+      </a>
+    </article>
+  );
+}
+
+export default function App() {
+  const [filter, setFilter] = useState<Category>("All");
+
+  const visibleProjects = useMemo(
+    () =>
+      filter === "All"
+        ? projects
+        : projects.filter((project) => project.type === filter),
+    [filter],
+  );
 
   return (
-    <main className="projects-page">
-      <section className="projects-hero">
-        <div className="projects-hero__eyebrow">
-          <span className="projects-hero__dot" /> Selected work
+    <div className="page">
+      <header className="site-header">
+        <div className="container header-inner">
+          <a className="brand" href="#top" aria-label="Portfolio home">
+            JP<span>.</span>
+          </a>
+          <nav aria-label="Primary navigation">
+            <a href="#projects" className="nav-link nav-link--active">
+              Projects
+            </a>
+            <a href="#contact" className="nav-link">
+              Contact
+            </a>
+          </nav>
         </div>
-        <h1>
-          Projects that turn
-          <span> ideas into interfaces.</span>
-        </h1>
-        <p>
-          A collection of product experiments, academic builds, and real-world
-          projects where design thinking meets frontend development.
-        </p>
-      </section>
+      </header>
 
-      <section className="projects-toolbar" aria-label="Project filters">
-        <div className="projects-filters" role="tablist" aria-label="Filter projects">
-          {filters.map((filter) => (
-            <button
-              key={filter}
-              type="button"
-              role="tab"
-              aria-selected={activeFilter === filter}
-              className={activeFilter === filter ? 'is-active' : ''}
-              onClick={() => setActiveFilter(filter)}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
-        <span className="projects-count">
-          {String(visibleProjects.length).padStart(2, '0')} projects
-        </span>
-      </section>
-
-      <section className="projects-grid" aria-live="polite">
-        {visibleProjects.map((project, index) => (
-          <article
-            className={`project-card ${project.featured ? 'project-card--featured' : ''}`}
-            key={project.title}
-          >
-            <div className="project-card__visual">
-              <div className="project-card__visual-grid" />
-              <div className="project-card__number">0{index + 1}</div>
-              <div className="project-card__mockup">
-                <div className="project-card__mockup-bar" />
-                <div className="project-card__mockup-content">
-                  <span />
-                  <span />
-                  <span />
+      <main id="top">
+        <section className="hero">
+          <div className="container">
+            <p className="kicker">Selected projects · 2025—2026</p>
+            <div className="hero-grid">
+              <h1>
+                Work that shows
+                <em> how I think.</em>
+              </h1>
+              <div className="hero-copy">
+                <p>
+                  Software projects across frontend development, full-stack
+                  engineering, and UI/UX. Built to solve real problems — not
+                  just to fill a portfolio.
+                </p>
+                <div className="hero-stats">
+                  <span>
+                    <strong>{projects.length}+</strong> projects
+                  </span>
+                  <span>
+                    <strong>3</strong> focus areas
+                  </span>
+                  <span>
+                    <strong>2025–26</strong> recent work
+                  </span>
                 </div>
-                <div className="project-card__mockup-panel" />
               </div>
-              <div className="project-card__category">
-                {project.category[0]}
+            </div>
+          </div>
+        </section>
+
+        <section className="projects-section" id="projects">
+          <div className="container">
+            <div className="filter-bar">
+              <div className="filter-count">
+                <strong>{String(visibleProjects.length).padStart(2, "0")}</strong>
+                <span> projects</span>
+              </div>
+
+              <div className="filters" role="group" aria-label="Filter projects">
+                {filters.map((item) => (
+                  <button
+                    type="button"
+                    key={item}
+                    className={filter === item ? "is-active" : ""}
+                    onClick={() => setFilter(item)}
+                    aria-pressed={filter === item}
+                  >
+                    {item}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="project-card__body">
-              <div className="project-card__meta">
-                <span>{project.year}</span>
-                <span>{project.category.join(' · ')}</span>
-              </div>
-
-              <h2>{project.title}</h2>
-              <p>{project.description}</p>
-
-              <div className="project-card__footer">
-                <div className="project-tech" aria-label="Technologies">
-                  {project.tech.map((tech) => (
-                    <span key={tech}>{tech}</span>
-                  ))}
-                </div>
-                <a href={project.link ?? '#'} className="project-card__arrow" aria-label={`View ${project.title}`}>
-                  ↗
-                </a>
-              </div>
+            <div className="project-list">
+              {visibleProjects.map((project) => (
+                <ProjectCard project={project} key={project.title} />
+              ))}
             </div>
-          </article>
-        ))}
-      </section>
-    </main>
+          </div>
+        </section>
+
+        <section className="contact-strip" id="contact">
+          <div className="container contact-inner">
+            <div>
+              <p className="kicker">Have a project in mind?</p>
+              <h2>
+                Let’s make something
+                <em> worth shipping.</em>
+              </h2>
+            </div>
+            <a className="contact-button" href="mailto:hello@example.com">
+              Get in touch <ArrowUpRight />
+            </a>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }
