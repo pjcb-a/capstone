@@ -1,0 +1,23 @@
+import Link from "next/link";
+
+const navigationItems = [
+  { label: "Home", href: "/" },
+  { label: "Projects", href: "/projects" },
+  { label: "Experience", href: "/experience" },
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
+];
+
+export default function Navigation() {
+  return (
+    <nav aria-label="Main navigation">
+      <ul>
+        {navigationItems.map((item) => (
+          <li key={item.href}>
+            <Link href={item.href}>{item.label}</Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
