@@ -10,7 +10,7 @@ const navigationItems = [
 
 export default function Navigation() {
   return (
-    <nav aria-label="Main navigation">
+    <nav className="site-nav" aria-label="Main navigation">
       <ul>
         {navigationItems.map((item) => (
           <li key={item.href}>

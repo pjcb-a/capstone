@@ -1,8 +1,5 @@
+import PagePlaceholder from "@/components/layout/PagePlaceholder";
+
 export default function ExperiencePage() {
-  return (
-    <section>
-      <h1>Experience</h1>
-      <p>Experience page placeholder.</p>
-    </section>
-  );
+  return <PagePlaceholder eyebrow="Work and learning" title="Experience" description="A timeline of roles, projects, and the skills developed along the way." nextStep="Add experience entries, dates, skills, and measurable outcomes." />;
 }

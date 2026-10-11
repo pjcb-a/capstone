@@ -1,13 +1,8 @@
-# capstone
+# Portfolio capstone
 
-My Week 1 Frontend AI Engineering Assignment at FlyRank AI Internship program.
+This repository contains the Frontend AI Engineering capstone. The FE-04 skeleton lives in [`frontend`](frontend) on the `fe04-skeleton` branch.
 
-## Tech Stack
+- [Screen spec](SCREEN_SPEC.md)
+- [Frontend setup and deployment](frontend/README.md)
 
-* React
-* Tailwind CSS
-* TypeScript
-* Vite
-* Node.js
-* Git & GitHub
-
+The frontend uses Next.js App Router, React, TypeScript, and Tailwind CSS. Its routes are placeholders for later portfolio work, with a server-rendered fetch demonstration at `/health`.

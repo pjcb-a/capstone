@@ -3,12 +3,13 @@ import Navigation from "./Navigation";
 
 export default function Header() {
   return (
-    <header>
-      <Link href="/" aria-label="Go to homepage">
-        JP.DEV
-      </Link>
-
-      <Navigation />
+    <header className="site-header">
+      <div className="site-header-inner">
+        <Link className="brand" href="/" aria-label="JP.DEV homepage">
+          JP<span>.DEV</span>
+        </Link>
+        <Navigation />
+      </div>
     </header>
   );
 }
