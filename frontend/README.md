@@ -1,78 +1,34 @@
-# React + TypeScript + Vite
+# Portfolio frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Next.js App Router skeleton for the Frontend AI Engineering capstone. Pages are Server Components by default. The screen list is in [`SCREEN_SPEC.md`](../SCREEN_SPEC.md).
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Requires Node.js 20.9 or newer.
 
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm ci
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Open `http://localhost:3000`. The health page uses a public sample JSON endpoint by default. To use another endpoint with the same `userId`, `id`, `title`, and `completed` fields, copy `.env.example` to `.env.local` and change `HEALTH_CHECK_URL`. `.env.local` is ignored by Git.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Verify
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run lint
+npm run build
 ```
+
+Check `/`, `/projects`, `/projects/sample-project`, `/experience`, `/about`, `/contact`, and `/health` at 375px and 1280px.
+
+## Deploy to Vercel
+
+1. Push `fe04-skeleton` to GitHub.
+2. Import `pjcb-a/capstone` into Vercel and set the **Root Directory** to `frontend`.
+3. Select the **Next.js** framework preset and use the existing `npm run build` command.
+4. Leave `HEALTH_CHECK_URL` unset to use the public sample endpoint, or add it in Vercel Project Settings → Environment Variables for Preview and Production. Do not put tokens or credentials in the repository.
+5. Push another commit to a non-production branch and confirm that Vercel creates a new Preview deployment. Open every route, including `/health`, on that URL.
+6. Submit the working Preview URL together with the [repository link](https://github.com/pjcb-a/capstone).
+
+Vercel's Preview deployments are built from non-production branches. If `fe04-skeleton` is selected as the production branch, use a separate branch for the preview check.
