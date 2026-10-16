@@ -19,7 +19,7 @@ export default function RootLayout({
         <main>{children}</main>
         <footer className="site-footer">
           <div className="site-footer-inner">
-            <p>JP.DEV · Portfolio skeleton</p>
+            <p>JP.DEV · Portfolio in progress</p>
             <a href="/health">Health check</a>
           </div>
         </footer>
