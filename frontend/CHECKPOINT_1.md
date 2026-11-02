@@ -1,8 +1,10 @@
 # Checkpoint 1 — FE-08
 
-Preview site supplied by the user: https://capstone-eight-nu.vercel.app/chat
+Public site supplied by the user: https://capstone-eight-nu.vercel.app/chat
 
-The FE-08 changes were verified locally with a mock Anthropic stream. The supplied live site is currently on the earlier FE-07 UI; the FE-08 changes still need a preview deployment before this URL can serve as Checkpoint 1 proof.
+FE-08 source revision: `3fbac30` on `codex/fe-08-error-states`. Vercel completed its branch deployment at https://capstone-jdb6e3v8e-pjcb-as-projects.vercel.app/chat, but the URL currently redirects visitors to Vercel sign-in. The public site still serves the earlier FE-07 UI, and its `/api/chat` endpoint returns HTTP 503 because `ANTHROPIC_API_KEY` is not configured. Neither URL is ready as public FE-08 Checkpoint 1 proof until the FE-08 revision is publicly reachable and its server key is configured.
+
+The FE-08 changes were verified locally with a mock Anthropic stream.
 
 ## Local screenshot evidence
 
@@ -19,7 +21,7 @@ At 375px and 1280px, the browser showed no horizontal document overflow. During 
 
 ## Remaining submission checks
 
-1. Deploy this source revision with `ANTHROPIC_API_KEY` configured for the preview environment.
-2. On the deployed `/chat` route, confirm a real tool call, a normal chat response, and no console errors during that happy path.
+1. Make this FE-08 revision publicly reachable with `ANTHROPIC_API_KEY` configured for its environment.
+2. On that deployed `/chat` route, confirm a real tool call, a normal chat response, and no console errors during that happy path.
 3. Test the keyboard and transcript scroll on a real mobile Safari device. Responsive browser checks at 375px and 1280px cannot prove real-device behavior.
 4. Submit the preview URL and the screenshots or a recording in the Checkpoint 1 Portal.
