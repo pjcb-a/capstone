@@ -5,7 +5,9 @@ import { DefaultChatTransport } from "ai";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { PortfolioMessage } from "@/lib/ai/portfolio-message";
 import { portfolioSections } from "@/lib/portfolio-sections";
-import ChatMessage, { ThinkingIndicator } from "./ChatMessage";
+import ChatFailure from "./ChatFailure";
+import ChatMessage from "./ChatMessage";
+import ChatPending from "./ChatPending";
 
 const STORAGE_KEY = "jp-dev-portfolio-chat-v1";
 const SUGGESTIONS = [
@@ -62,15 +64,36 @@ function restoreMessages(): PortfolioMessage[] {
 
 export default function PortfolioChat() {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
-  const { messages, setMessages, sendMessage, stop, status, error, clearError } = useChat<PortfolioMessage>({ transport });
+  const [notice, setNotice] = useState<{ title: string; detail: string; retry: boolean } | null>(null);
+  const { messages, setMessages, sendMessage, regenerate, stop, status, error, clearError } = useChat<PortfolioMessage>({
+    transport,
+    onFinish: ({ message, isAbort, isError, finishReason }) => {
+      if (isAbort || isError) return;
+      if (finishReason === "content-filter") {
+        setNotice({ title: "The guide could not answer that", detail: "Try a question about the portfolio pages or projects.", retry: false });
+      } else if (finishReason === "length") {
+        setNotice({ title: "The reply ended early", detail: "You can retry the last question for a complete answer.", retry: true });
+      } else if (!message.parts.some((part) => (part.type === "text" && Boolean(part.text.trim())) || part.type === "tool-getPortfolioSection")) {
+        setNotice({ title: "No answer came back", detail: "Try asking where to find Projects or another portfolio section.", retry: false });
+      }
+    },
+  });
   const [input, setInput] = useState("");
   const [restored, setRestored] = useState(false);
   const [showJump, setShowJump] = useState(false);
+  const [slow, setSlow] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const pinnedRef = useRef(true);
+  const retryLockRef = useRef(false);
   const busy = status === "submitted" || status === "streaming";
   const lastMessage = messages.at(-1);
+  const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
+  const lastQuestion = lastUserMessage?.parts.filter((part) => part.type === "text").map((part) => part.text).join("") ?? "";
   const showPending = busy && lastMessage?.role === "user";
+  const showUnanswered = restored && !busy && !error && !notice && lastMessage?.role === "user";
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -95,6 +118,24 @@ export default function PortfolioChat() {
     }
   }, [messages, restored]);
 
+  useEffect(() => {
+    if (!busy) return;
+    const timer = window.setTimeout(() => setSlow(true), 5000);
+    return () => window.clearTimeout(timer);
+  }, [busy]);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const revealComposer = () => {
+      if (document.activeElement === inputRef.current && window.matchMedia("(max-width: 640px)").matches) {
+        composerRef.current?.scrollIntoView({ block: "nearest" });
+      }
+    };
+    viewport.addEventListener("resize", revealComposer);
+    return () => viewport.removeEventListener("resize", revealComposer);
+  }, []);
+
   useLayoutEffect(() => {
     if (messages.length === 0 && scrollRef.current) {
       scrollRef.current.scrollTop = 0;
@@ -103,7 +144,7 @@ export default function PortfolioChat() {
     if (pinnedRef.current && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, showPending]);
+  }, [messages, showPending, error, notice]);
 
   function updateScrollPin() {
     const pane = scrollRef.current;
@@ -123,14 +164,35 @@ export default function PortfolioChat() {
     const trimmed = text.trim();
     if (!trimmed || busy || !restored) return;
     clearError();
+    setNotice(null);
+    setSlow(false);
     setInput("");
     jumpToLatest();
     void sendMessage({ text: trimmed });
   }
 
+  async function retryLastMessage() {
+    if (!lastUserMessage || busy || retryLockRef.current) return;
+    retryLockRef.current = true;
+    setRetrying(true);
+    setNotice(null);
+    setSlow(false);
+    jumpToLatest();
+    try {
+      await regenerate({ messageId: lastUserMessage.id });
+    } catch {
+      setNotice({ title: "Retry could not start", detail: "Wait a moment, then try the last question again.", retry: true });
+    } finally {
+      retryLockRef.current = false;
+      setRetrying(false);
+    }
+  }
+
   function startNewChat() {
     if (busy) return;
     clearError();
+    setNotice(null);
+    setSlow(false);
     setMessages([]);
     setInput("");
     pinnedRef.current = true;
@@ -177,30 +239,36 @@ export default function PortfolioChat() {
               </div>
             )}
             {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} active={busy && message.id === lastMessage?.id} />
+              <ChatMessage key={message.id} message={message} active={busy && message.id === lastMessage?.id} slow={slow} />
             ))}
             {showPending && (
-              <article className="chat-message chat-message-assistant">
-                <span className="chat-message-label">Portfolio guide</span>
-                <div className="chat-message-body"><ThinkingIndicator /></div>
-              </article>
+              <ChatPending slow={slow} />
             )}
+            {slow && busy && !showPending && <p className="chat-pending-note" role="status">Still working. You can stop this reply and try again.</p>}
+            {error && <ChatFailure error={error} question={lastQuestion} onRetry={() => { void retryLastMessage(); }} retrying={retrying || busy} />}
+            {notice && !error && <div className="chat-notice" role="status"><strong>{notice.title}</strong><p>{notice.detail}</p><button type="button" onClick={() => notice.retry ? void retryLastMessage() : submit("Where can I find the projects section?")} disabled={busy || retrying}>{notice.retry ? "Retry last question" : "Ask about Projects"}</button></div>}
+            {showUnanswered && <div className="chat-notice" role="status"><strong>Your last question has no reply</strong><p>The conversation was interrupted. You can retry that question when the connection is ready.</p><button type="button" onClick={() => { void retryLastMessage(); }} disabled={retrying}>Retry last question</button></div>}
           </div>
-          {showJump && (
+          {showJump && messages.length > 0 && (
             <button className="chat-jump" type="button" onClick={jumpToLatest}>↓ Jump to latest</button>
           )}
         </div>
 
-        <div className="chat-composer-area">
-          {error && <p className="chat-error" role="alert">The response could not be completed. You can try another message.</p>}
+        <div className="chat-composer-area" ref={composerRef}>
           <p className="chat-live-status sr-only" role="status">
-            {status === "submitted" ? "Waiting for a response" : status === "streaming" ? "Response streaming" : "Ready to chat"}
+            {status === "submitted" ? "Waiting for a response" : status === "streaming" ? "Response streaming" : status === "error" ? "Response failed. Retry the last question." : "Ready to chat"}
           </p>
           <form className="chat-composer" onSubmit={(event) => { event.preventDefault(); submit(input); }}>
             <label className="sr-only" htmlFor="chat-input">Message the portfolio guide</label>
             <textarea
               id="chat-input"
+              ref={inputRef}
               value={input}
+              onFocus={() => {
+                if (window.matchMedia("(max-width: 640px)").matches) {
+                  requestAnimationFrame(() => composerRef.current?.scrollIntoView({ block: "nearest" }));
+                }
+              }}
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {

@@ -21,6 +21,24 @@ The guide streams Claude text and typed tool parts through the AI SDK, keeps par
 
 The UI renders `input-streaming` as a skeleton, `input-available` as an active route lookup, `output-available` as a linked section card, and `output-error` as an error panel. Ask **“Where can I find the projects section?”** for a success example or **“Is there a services page?”** for the failure example. The route allows one tool step and one follow-up response step.
 
+## FE-08 failure handling
+
+The chat keeps the submitted question when a request fails. Its retry button calls `regenerate({ messageId })` for that last user question and is guarded against double clicks. An interrupted partial reply stays visible until a retry replaces it. Expected API and network failures appear inside the transcript; unexpected page-rendering failures use the `/chat` and app-level `error.tsx` boundaries with a reload action.
+
+| Case | Designed response | Local check |
+| --- | --- | --- |
+| Network unavailable before send | Connection panel with the failed question and retry | Stop the local app after the page loads, then send a question |
+| Provider error during a stream | Keep partial text; show a retry panel | With the mock, send `Test midstream failure` |
+| Connection drops during a stream | Keep partial text; show connection guidance | With the mock, send `Test connection drop` |
+| Rate limit or overload | Busy message and retry | With the mock, send `Test rate limit` |
+| Empty or whitespace-only input | Send remains disabled | Type spaces into the composer |
+| No matching section | Tool error card links to Projects | Ask `Is there a services page?` |
+| First visit, no conversation | Suggested questions start the chat | Select **New chat** |
+| Slow reply | Result-sized skeleton, then a still-working hint | With the mock, send `Test slow response` |
+| Unexpected route render error | Route error boundary offers reload and Home | Temporarily throw from `app/chat/page.tsx`, then remove the throw |
+
+The composer uses the dynamic viewport height, safe-area padding, and `visualViewport` resize handling to keep it in view when a phone keyboard opens. The transcript has contained touch scrolling. See [Checkpoint 1 evidence](CHECKPOINT_1.md) for local screenshots and verification limits.
+
 ## Verify
 
 ```bash

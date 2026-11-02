@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 
 const port = 4010;
 let requestNumber = 0;
+const scenarioAttempts = new Map();
 
 const server = createServer(async (request, response) => {
   if (request.method !== "POST" || request.url !== "/v1/messages") {
@@ -16,13 +17,27 @@ const server = createServer(async (request, response) => {
   const payload = JSON.parse(body);
   const turn = ++requestNumber;
   const userTurns = payload.messages.filter((message) => message.role === "user").length;
-  const lastUser = [...payload.messages].reverse().find((message) => message.role === "user");
+  const lastUser = [...payload.messages].reverse().find((message) =>
+    message.role === "user" && Array.isArray(message.content) && message.content.some((part) => part.type === "text"));
   const userContent = Array.isArray(lastUser?.content) ? lastUser.content : [];
   const userText = userContent.filter((part) => part.type === "text").map((part) => part.text).join(" ").toLowerCase();
   const toolResultPresent = payload.messages.some((message) =>
     Array.isArray(message.content) && message.content.some((part) => part.type === "tool_result"));
   const toolSection = /services/.test(userText) ? "services" : /projects/.test(userText) ? "projects" : null;
+  const scenario = /test midstream failure/.test(userText) ? "midstream" :
+    /test connection drop/.test(userText) ? "drop" :
+      /test rate limit/.test(userText) ? "rate-limit" :
+        /test slow response/.test(userText) ? "slow" : null;
+  const attempt = scenario ? (scenarioAttempts.get(scenario) ?? 0) + 1 : 0;
+  if (scenario) scenarioAttempts.set(scenario, attempt);
   console.log(`Request ${turn}: ${userTurns} user turn(s)`);
+
+  // The AI SDK may retry the provider request internally before the UI sees a 429.
+  if (scenario === "rate-limit" && attempt <= 3) {
+    response.writeHead(429, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ type: "error", error: { type: "rate_limit_error", message: "Mock rate limit" } }));
+    return;
+  }
 
   response.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -75,6 +90,17 @@ const server = createServer(async (request, response) => {
   let index = 0;
   const timer = setInterval(() => {
     if (index < words.length) {
+      if (index === 4 && attempt === 1 && scenario === "midstream") {
+        clearInterval(timer);
+        send("error", { type: "error", error: { type: "overloaded_error", message: "Mock stream interrupted" } });
+        response.end();
+        return;
+      }
+      if (index === 4 && attempt === 1 && scenario === "drop") {
+        clearInterval(timer);
+        response.destroy();
+        return;
+      }
       send("content_block_delta", {
         type: "content_block_delta",
         index: 0,
@@ -91,7 +117,7 @@ const server = createServer(async (request, response) => {
     });
     send("message_stop", { type: "message_stop" });
     response.end();
-  }, 260);
+  }, scenario === "slow" ? 1400 : 260);
 
   response.on("close", () => clearInterval(timer));
 });

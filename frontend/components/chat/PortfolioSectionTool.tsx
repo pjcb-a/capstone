@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { PortfolioMessage } from "@/lib/ai/portfolio-message";
+import { SECTION_NOT_FOUND_MESSAGE } from "@/lib/portfolio-sections";
 
 type SectionToolPart = Extract<PortfolioMessage["parts"][number], { type: "tool-getPortfolioSection" }>;
 
@@ -30,15 +31,17 @@ export default function PortfolioSectionTool({ part }: { part: SectionToolPart }
           <Link href={part.output.href}>Open {part.output.title} <span aria-hidden="true">↗</span></Link>
         </div>
       );
-    case "output-error":
+    case "output-error": {
+      const noMatch = part.errorText === SECTION_NOT_FOUND_MESSAGE;
       return (
         <div className="section-tool section-tool-error" role="alert">
-          <span className="section-tool-kicker">Lookup failed</span>
-          <h3>Section unavailable</h3>
+          <span className="section-tool-kicker">{noMatch ? "No matching section" : "Lookup failed"}</span>
+          <h3>{noMatch ? "Nothing here yet" : "Section unavailable"}</h3>
           <p>{part.errorText || "That section could not be found right now."}</p>
-          <span className="section-tool-recovery">Try Projects, Experience, About, or Contact.</span>
+          <Link className="section-tool-recovery" href="/projects">Browse the Projects page <span aria-hidden="true">↗</span></Link>
         </div>
       );
+    }
     default:
       return null;
   }

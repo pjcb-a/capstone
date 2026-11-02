@@ -15,6 +15,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function publicStreamError(error: unknown) {
+  if (error instanceof Error && error.message === SECTION_NOT_FOUND_MESSAGE) return SECTION_NOT_FOUND_MESSAGE;
+  const status = isRecord(error) ? error.statusCode : null;
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  if (status === 429 || status === 529 || /rate.limit|overload|at capacity|too many requests/.test(message)) {
+    return "The model is busy right now. Please retry your last question shortly.";
+  }
+  return "The response was interrupted. Please retry your last question.";
+}
+
 function parseMessages(value: unknown): UIMessage[] | null {
   if (!Array.isArray(value) || value.length < 1 || value.length > MAX_MESSAGES) {
     return null;
@@ -84,8 +94,6 @@ export async function POST(request: Request) {
   });
 
   return result.toUIMessageStreamResponse({
-    onError: (error) => error instanceof Error && error.message === SECTION_NOT_FOUND_MESSAGE
-      ? SECTION_NOT_FOUND_MESSAGE
-      : "The assistant could not finish this response. Please try again.",
+    onError: publicStreamError,
   });
 }
