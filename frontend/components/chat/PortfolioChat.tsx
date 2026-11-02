@@ -1,29 +1,59 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIMessage } from "ai";
+import { DefaultChatTransport } from "ai";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { PortfolioMessage } from "@/lib/ai/portfolio-message";
+import { portfolioSections } from "@/lib/portfolio-sections";
 import ChatMessage, { ThinkingIndicator } from "./ChatMessage";
 
 const STORAGE_KEY = "jp-dev-portfolio-chat-v1";
 const SUGGESTIONS = [
   "What can I explore on this site?",
-  "How was this portfolio built?",
-  "Where can I find project details?",
+  "Where can I find the projects section?",
+  "Is there a services page?",
 ];
 
-function restoreMessages(): UIMessage[] {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function restorePart(value: unknown): PortfolioMessage["parts"][number] | null {
+  if (!isRecord(value)) return null;
+  if (value.type === "text" && typeof value.text === "string" && value.text.length <= 6000) {
+    return { type: "text", text: value.text };
+  }
+  if (value.type !== "tool-getPortfolioSection" || typeof value.toolCallId !== "string" ||
+    !isRecord(value.input) || typeof value.input.section !== "string") return null;
+
+  const input = { section: value.input.section.slice(0, 40) };
+  if (value.state === "output-error" && typeof value.errorText === "string") {
+    return { type: "tool-getPortfolioSection", toolCallId: value.toolCallId, state: "output-error", input, errorText: value.errorText.slice(0, 200) };
+  }
+  const output = value.output;
+  if (value.state === "output-available" && isRecord(output)) {
+    const match = portfolioSections.find((item) => item.href === output.href &&
+      item.title === output.title && item.summary === output.summary && item.status === output.status);
+    if (!match) return null;
+    return { type: "tool-getPortfolioSection", toolCallId: value.toolCallId, state: "output-available", input,
+      output: { title: match.title, summary: match.summary, href: match.href, status: match.status } };
+  }
+  return null;
+}
+
+function restoreMessages(): PortfolioMessage[] {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as unknown;
     if (!Array.isArray(stored)) return [];
-    return stored.flatMap((value): UIMessage[] => {
-      if (typeof value !== "object" || value === null ||
-        !("id" in value) || typeof value.id !== "string" ||
-        !("role" in value) || (value.role !== "user" && value.role !== "assistant") ||
-        !("text" in value) || typeof value.text !== "string" || !value.text.trim()) {
-        return [];
-      }
-      return [{ id: value.id, role: value.role, parts: [{ type: "text", text: value.text }] }];
+    return stored.flatMap((value): PortfolioMessage[] => {
+      if (!isRecord(value) || typeof value.id !== "string" ||
+        (value.role !== "user" && value.role !== "assistant")) return [];
+      // FE-06 stored only { text }; keep those conversations after this upgrade.
+      const savedParts = Array.isArray(value.parts) ? value.parts :
+        typeof value.text === "string" ? [{ type: "text", text: value.text }] : [];
+      const parts = savedParts.map(restorePart).filter((part): part is NonNullable<typeof part> => part !== null);
+      if (!parts.length || (value.role === "user" && !parts.some((part) => part.type === "text" && part.text.trim()))) return [];
+      return [{ id: value.id, role: value.role, parts }];
     }).slice(-30);
   } catch {
     return [];
@@ -32,7 +62,7 @@ function restoreMessages(): UIMessage[] {
 
 export default function PortfolioChat() {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
-  const { messages, setMessages, sendMessage, stop, status, error, clearError } = useChat({ transport });
+  const { messages, setMessages, sendMessage, stop, status, error, clearError } = useChat<PortfolioMessage>({ transport });
   const [input, setInput] = useState("");
   const [restored, setRestored] = useState(false);
   const [showJump, setShowJump] = useState(false);
@@ -56,8 +86,9 @@ export default function PortfolioChat() {
       const compact = messages.map((message) => ({
         id: message.id,
         role: message.role,
-        text: message.parts.filter((part) => part.type === "text").map((part) => part.text).join(""),
-      })).filter((message) => message.text.trim());
+        parts: message.parts.filter((part) => part.type === "text" ||
+          (part.type === "tool-getPortfolioSection" && (part.state === "output-available" || part.state === "output-error"))),
+      })).filter((message) => message.parts.length);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(compact));
     } catch {
       // Storage can be unavailable or full; chat remains usable in memory.
@@ -146,7 +177,7 @@ export default function PortfolioChat() {
               </div>
             )}
             {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} active={busy} />
+              <ChatMessage key={message.id} message={message} active={busy && message.id === lastMessage?.id} />
             ))}
             {showPending && (
               <article className="chat-message chat-message-assistant">
