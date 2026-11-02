@@ -1,5 +1,7 @@
-import { convertToModelMessages, streamText, type UIMessage } from "ai";
+import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai";
 import { portfolioAssistant } from "@/lib/ai/portfolio-assistant";
+import { portfolioTools } from "@/lib/ai/portfolio-tools";
+import { SECTION_NOT_FOUND_MESSAGE } from "@/lib/portfolio-sections";
 
 export const maxDuration = 30;
 
@@ -76,10 +78,14 @@ export async function POST(request: Request) {
     system: portfolioAssistant.system,
     maxOutputTokens: portfolioAssistant.maxOutputTokens,
     messages: await convertToModelMessages(messages),
+    tools: portfolioTools,
+    stopWhen: stepCountIs(2),
     abortSignal: request.signal,
   });
 
   return result.toUIMessageStreamResponse({
-    onError: () => "The assistant could not finish this response. Please try again.",
+    onError: (error) => error instanceof Error && error.message === SECTION_NOT_FOUND_MESSAGE
+      ? SECTION_NOT_FOUND_MESSAGE
+      : "The assistant could not finish this response. Please try again.",
   });
 }
